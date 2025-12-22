@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Monitoring Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="glass-container">
+        <header>
+            <h1>Supermarket Monitor</h1>
+            <p class="subtitle">Real-time Employee Availability & Alerts</p>
+        </header>
+
+        <main>
+            <!-- Stats Overview -->
+            <section class="stats-grid">
+                <div class="stat-card">
+                    <h3>Idle Employees</h3>
+                    <div class="stat-value" id="count-idle">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Occupied</h3>
+                    <div class="stat-value" id="count-occupied">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Out of Zone</h3>
+                    <div class="stat-value" id="count-out">0</div>
+                </div>
+            </section>
+
+            <!-- Employee List -->
+            <section class="panel">
+                <h2>Employee Status</h2>
+                <div id="employee-list" class="list-container">
+                    <!-- Javascript will populate this -->
+                    <div class="loading">Loading data...</div>
+                </div>
+            </section>
+
+            <!-- Unattended Customers / Notifications -->
+            <section class="panel alert-panel">
+                <h2>Live Alerts</h2>
+                <div id="alert-list" class="list-container">
+                    <div class="empty-state">No active alerts</div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
