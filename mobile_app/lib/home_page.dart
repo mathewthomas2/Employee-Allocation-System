@@ -18,7 +18,7 @@ class _HomePageState extends State<HomePage> {
 
   // IMPORTANT: For Android Emulator, use 10.0.2.2 instead of localhost
   // If running on physical device, use your PC's IP address (e.g., http://192.168.1.50:8000)
-  final String baseUrl = "http://10.0.2.2:8000"; 
+  final String baseUrl = "http://192.168.10.101:8000"; 
 
   @override
   void initState() {
