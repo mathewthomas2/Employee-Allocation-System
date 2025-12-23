@@ -18,8 +18,13 @@ app.add_middleware(
 # --- Models ---
 class Employee(BaseModel):
     id: str  # e.g., "EMP001"
+    password: str # [NEW] Password field
     status: str  # "Idle", "Occupied", "Out of Zone"
     last_seen: str # timestamp string
+
+class LoginRequest(BaseModel):
+    id: str
+    password: str
 
 class Customer(BaseModel):
     id: int
@@ -32,18 +37,33 @@ class SystemState(BaseModel):
     pending_notifications: List[str] # List of messages
 
 # --- Mock Data Store ---
+# Added basic passwords (1234) for testing
 state = SystemState(
     employees=[
-        Employee(id="EMP001", status="Idle", last_seen="10:00:00"),
-        Employee(id="EMP002", status="Occupied", last_seen="10:00:05"),
-        Employee(id="EMP003", status="Out of Zone", last_seen="09:55:00"),
+        Employee(id="EMP001", password="1234", status="Idle", last_seen="10:00:00"),
+        Employee(id="EMP002", password="password", status="Occupied", last_seen="10:00:05"),
+        Employee(id="EMP003", password="admin", status="Out of Zone", last_seen="09:55:00"),
     ],
     customers=[
         Customer(id=101, status="Shopping", location="Aisle 1"),
         Customer(id=102, status="Needs Help", location="Checkout"),
     ],
-    pending_notifications=["Customer 102 needs help!"]
+    pending_notifications=["Dairy Section needs assistance!"]
 )
+
+# --- Routes ---
+@app.post("/login")
+def login(request: LoginRequest):
+    """validates credentials against the mock database."""
+    emp = next((e for e in state.employees if e.id == request.id), None)
+    
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee ID not found")
+    
+    if emp.password != request.password:
+        raise HTTPException(status_code=401, detail="Invalid Credentials")
+    
+    return {"message": "Login successful", "emp_id": emp.id}
 
 # --- Routes ---
 @app.get("/")

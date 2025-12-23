@@ -13,8 +13,3 @@ Thumbs.db
 # Editor
 .vscode/
 .idea/
-
-# Video Files (Don't commit large videos)
-*.mp4
-*.avi
-*.mov
