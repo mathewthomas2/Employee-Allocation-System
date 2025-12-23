@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:vibration/vibration.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomePage extends StatefulWidget {
   final String empId;
@@ -29,11 +31,12 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     _timer?.cancel();
+    Vibration.cancel(); // Stop vibration if user leaves app
     super.dispose();
   }
 
   void _startPolling() {
-    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
       _checkNotifications();
     });
   }
@@ -46,11 +49,18 @@ class _HomePageState extends State<HomePage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['has_notification'] == true) {
+           
+           // Triger Sound & Vibration (Only if not already vibrating)
+           if (activeAlert == null) {
+              // Pattern: [Wait 500ms, Buzz 500ms] repeated
+              Vibration.vibrate(pattern: [500, 500], repeat: 0); 
+           }
+
            setState(() {
              activeAlert = data['message'];
              status = "Action Required!";
            });
-           _showAlertDialog(data['message']);
+           // _showAlertDialog(data['message']); // relying on UI button below
         } else {
            if (activeAlert == null) {
              setState(() {
@@ -77,6 +87,7 @@ class _HomePageState extends State<HomePage> {
         backgroundColor: Colors.red,
         duration: const Duration(seconds: 5),
         action: SnackBarAction(label: "ACKNOWLEDGE", textColor: Colors.white, onPressed: () {
+           Vibration.cancel();
            setState(() {
              activeAlert = null;
              status = "Monitoring Zone...";
@@ -94,6 +105,20 @@ class _HomePageState extends State<HomePage> {
       appBar: AppBar(
         title: Text("Employee: ${widget.empId}"),
         backgroundColor: isAlert ? Colors.red : Colors.deepPurple[100],
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            onPressed: () async {
+               // Logout Logic
+               final prefs = await SharedPreferences.getInstance();
+               await prefs.clear(); // Clear Session
+               
+               if (!mounted) return;
+               // Navigate back to Login and remove all history
+               Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+            },
+          )
+        ],
       ),
       backgroundColor: isAlert ? Colors.red[50] : Colors.white,
       body: Center(
@@ -134,6 +159,7 @@ class _HomePageState extends State<HomePage> {
                const SizedBox(height: 30),
                ElevatedButton.icon(
                  onPressed: () {
+                   Vibration.cancel(); // Stop buzzing manually
                    setState(() {
                      activeAlert = null;
                      status = "Monitoring Zone...";
