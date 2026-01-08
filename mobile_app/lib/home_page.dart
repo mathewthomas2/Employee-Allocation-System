@@ -14,7 +14,7 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  String status = "Connecting...";
+  String status = "Monitoring Zone...";
   String? activeAlert;
   Timer? _timer;
 
