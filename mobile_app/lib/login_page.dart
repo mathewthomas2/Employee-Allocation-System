@@ -16,7 +16,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passController = TextEditingController();
   
   // Use the SAME IP as home_page.dart
-  final String baseUrl = "http://192.168.101.101:8000"; 
+  final String baseUrl = "http://192.168.9.101:8000"; 
   String? _errorMessage;
   bool _isLoading = false;
 

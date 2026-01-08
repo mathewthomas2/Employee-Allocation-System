@@ -20,7 +20,7 @@ class _HomePageState extends State<HomePage> {
 
   // IMPORTANT: For Android Emulator, use 10.0.2.2 instead of localhost
   // If running on physical device, use your PC's IP address (e.g., http://192.168.1.50:8000)
-  final String baseUrl = "http://192.168.101.101:8000"; 
+  final String baseUrl = "http://192.168.9.101:8000"; 
 
   @override
   void initState() {
@@ -78,8 +78,6 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _showAlertDialog(String message) {
-    // Only show if not already open? For simplicity, we just rely on the banner for now
-    // or we can show a SnackBar
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
