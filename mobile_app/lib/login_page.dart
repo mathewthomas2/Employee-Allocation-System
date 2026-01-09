@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'home_page.dart';
+import 'config.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -15,8 +16,8 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _idController = TextEditingController();
   final TextEditingController _passController = TextEditingController();
   
-  // Use the SAME IP as home_page.dart
-  final String baseUrl = "http://192.168.9.101:8000"; 
+  // Use the connection string from config.dart
+  final String baseUrl = Config.baseUrl; 
   String? _errorMessage;
   bool _isLoading = false;
 

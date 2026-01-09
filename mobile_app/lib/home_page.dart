@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:vibration/vibration.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'config.dart';
 
 class HomePage extends StatefulWidget {
   final String empId;
@@ -18,9 +19,8 @@ class _HomePageState extends State<HomePage> {
   String? activeAlert;
   Timer? _timer;
 
-  // IMPORTANT: For Android Emulator, use 10.0.2.2 instead of localhost
-  // If running on physical device, use your PC's IP address (e.g., http://192.168.1.50:8000)
-  final String baseUrl = "http://192.168.9.101:8000"; 
+  // Use the connection string from config.dart
+  final String baseUrl = Config.baseUrl; 
 
   @override
   void initState() {
