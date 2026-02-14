@@ -5,6 +5,13 @@ __pycache__/
 venv/
 .venv/
 env/
+*.log
+coverage/
+
+# Node/Web
+node_modules/
+build/
+.env
 
 # OS
 .DS_Store
@@ -16,5 +23,3 @@ Thumbs.db
 
 # Videos
 videos/
-
-*.log
