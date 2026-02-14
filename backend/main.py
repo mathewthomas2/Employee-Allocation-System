@@ -17,7 +17,7 @@ app.add_middleware(
 
 # --- Models ---
 class Employee(BaseModel):
-    id: str  # e.g., "EMP001"
+    id: str  # e.g., "EMP_01"
     password: str # [NEW] Password field
     status: str  # "Idle", "Occupied", "Out of Zone"
     last_seen: str # timestamp string
@@ -36,13 +36,17 @@ class SystemState(BaseModel):
     customers: List[Customer]
     pending_notifications: List[str] # List of messages
 
+class StatusUpdateRequest(BaseModel):
+    employee_id: str
+    status: str
+
 # --- Mock Data Store ---
-# Added basic passwords (1234) for testing
+# IDs updated to match Video Text (EMP_01)
 state = SystemState(
     employees=[
-        Employee(id="EMP001", password="1234", status="Idle", last_seen="10:00:00"),
-        Employee(id="EMP002", password="password", status="Occupied", last_seen="10:00:05"),
-        Employee(id="EMP003", password="admin", status="Out of Zone", last_seen="09:55:00"),
+        Employee(id="EMP_01", password="1234", status="Occupied", last_seen="10:00:00"),
+        Employee(id="EMP_02", password="password", status="Occupied", last_seen="10:00:05"),
+        Employee(id="EMP_03", password="admin", status="Idle", last_seen="09:55:00"),
     ],
     customers=[
         Customer(id=101, status="Shopping", location="Aisle 1"),
@@ -75,6 +79,26 @@ def get_status():
     """Returns the current simulated state of the supermarket."""
     return state
 
+@app.post("/update_real_status")
+def update_real_status(update: StatusUpdateRequest):
+    """
+    Receives real-time updates from Computer Vision Engine.
+    Expected Payload: {"employee_id": "EMP_01", "status": "Idle"}
+    """
+    emp = next((e for e in state.employees if e.id == update.employee_id), None)
+    
+    if not emp:
+        # If ID not found, maybe add them dynamically? For now, just error or ignore.
+        raise HTTPException(status_code=404, detail="Employee ID not found in system")
+    
+    emp.status = update.status
+    # Update timestamp
+    import datetime
+    emp.last_seen = datetime.datetime.now().strftime("%H:%M:%S")
+    
+    print(f"[REAL-TIME] Updated {emp.id} to {emp.status}")
+    return {"message": "Status updated successfully", "new_state": emp}
+
 @app.post("/update_mock")
 def update_mock_status():
     """Randomly updates statuses to simulate activity for demo purposes."""
@@ -96,7 +120,7 @@ def get_notifications(emp_id: str):
     Mobile App Poll Endpoint.
     Real logic would check if a specific alert is assigned to this ID.
     """
-    # Simple logic: If EMP001 is Idle and there are notifications, send one.
+    # Simple logic: If EMP_01 is Idle and there are notifications, send one.
     target_emp = next((e for e in state.employees if e.id == emp_id), None)
     
     if not target_emp:

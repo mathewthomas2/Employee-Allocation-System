@@ -36,7 +36,20 @@ The backend acts as the central server.
    ```
 5. **Login**: Use ID `EMP001` and Password `1234`.
 
-### 3. Open the Dashboard
+### 3. Start the Computer Vision Brain (New)
+1. Open a **new** terminal.
+2. Run the detection script:
+   ```bash
+   python cv_engine/main.py
+   ```
+3. A window will open showing the video feed and detection boxes.
+
+### 4. Open the Dashboard
 1. Simply navigate to the `dashboard` folder in your file explorer.
 2. Double-click `index.html` to open it in your web browser.
 3. It will connect to `http://localhost:8000` automatically.
+
+## How to Stop & Restart
+To stop any part of the system (Backend, Mobile App, or CV), just click inside its terminal and press **Ctrl + C**.
+
+To restart, simply run the command for that part again. All components are independent!
