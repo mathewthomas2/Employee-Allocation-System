@@ -12,62 +12,101 @@ async function fetchStatus() {
 
 function updateUI(data) {
     const employees = data.employees;
-    const notifications = data.pending_notifications;
+    
+    // In our python backend, unattended_zones is a dict like {"EMP_01": {"is_unattended": true, "location": "Section A"}}
+    // Build a list of active alerts to display
+    let activeAlerts = [];
+    if (data.unattended_zones) {
+        Object.keys(data.unattended_zones).forEach(zoneId => {
+            const info = data.unattended_zones[zoneId];
+            if ((typeof info === 'object' && info.is_unattended) || info === true) {
+                const loc = (typeof info === 'object' && info.location) ? info.location : "Unknown Zone";
+                activeAlerts.push(`Unattended Customer detected at ${loc}`);
+            }
+        });
+    }
 
-    // 1. Update Stats (with simple animation logic could be added here)
+    // 1. Update Stats
     const idle = employees.filter(e => e.status === "Idle").length;
     const occupied = employees.filter(e => e.status === "Occupied").length;
     const out = employees.filter(e => e.status === "Out of Zone").length;
 
-    animateValue("count-idle", parseInt(document.getElementById("count-idle").innerText), idle);
-    animateValue("count-occupied", parseInt(document.getElementById("count-occupied").innerText), occupied);
-    animateValue("count-out", parseInt(document.getElementById("count-out").innerText), out);
+    animateValue("count-idle", parseInt(document.getElementById("count-idle").innerText) || 0, idle);
+    animateValue("count-occupied", parseInt(document.getElementById("count-occupied").innerText) || 0, occupied);
+    animateValue("count-out", parseInt(document.getElementById("count-out").innerText) || 0, out);
 
     // 2. Update Employee List
     const empList = document.getElementById("employee-list");
-    // Improvement: Instead of clearing innerHTML, we could diff, but for now simple rebuild is fine for small list
     empList.innerHTML = ""; 
 
-    employees.forEach(emp => {
-        // Handle "Out of Zone" logic for CSS class
+    employees.forEach((emp, index) => {
+        // Handle Map to CSS classes
         let statusClass = "Idle";
-        if(emp.status === "Occupied") statusClass = "Occupied";
-        if(emp.status === "Out of Zone") statusClass = "Out";
+        let iconName = "person-outline";
+        if(emp.status === "Occupied") {
+            statusClass = "Occupied";
+            iconName = "people-outline";
+        }
+        if(emp.status === "Out of Zone") {
+            statusClass = "Out";
+            iconName = "log-out-outline";
+        }
+
+        // Add stagger animation delay
+        const delay = (index * 0.1) + 's';
 
         const div = document.createElement("div");
         div.className = "employee-card";
+        div.style.animationDelay = delay;
+        // Data attribute for the CSS glow effect
+        div.setAttribute('data-status', statusClass);
         
         div.innerHTML = `
-            <div class="avatar">${emp.id.substring(3)}</div>
+            <div class="avatar">
+                <ion-icon name="${iconName}"></ion-icon>
+            </div>
             <div class="card-info">
                 <h3>${emp.id}</h3>
-                <span class="status-badge badge-${statusClass}">${emp.status}</span>
-                <span class="last-seen">Last seen: ${emp.last_seen}</span>
+                <span class="status-badge badge-${statusClass}">
+                    <div class="status-indicator"></div>
+                    ${emp.status}
+                </span>
+                <span class="last-seen">
+                    <ion-icon name="time-outline"></ion-icon>
+                    Last seen: ${emp.last_seen}
+                </span>
             </div>
-            <ion-icon name="radio-button-on-outline" style="color: var(--status-${statusClass.toLowerCase()});"></ion-icon>
         `;
         empList.appendChild(div);
     });
 
     // 3. Update Alerts
     const alertList = document.getElementById("alert-list");
-    alertList.innerHTML = "";
-
-    if (notifications.length === 0) {
-        alertList.innerHTML = `
-            <div class="empty-state" style="grid-column: 1 / -1;">
-                <ion-icon name="shield-checkmark-outline" style="font-size: 32px; margin-bottom: 10px;"></ion-icon>
-                <div>No active alerts. All zones secure.</div>
-            </div>`;
+    
+    // Only rebuild if the alert count changed to prevent constant animation flashing
+    // For a complex production app we'd use a real ID diff, but this is simple enough for the demo
+    if (activeAlerts.length === 0) {
+        if (!alertList.querySelector('.empty-state')) {
+            alertList.innerHTML = `
+                <div class="empty-state">
+                    <ion-icon name="shield-checkmark-outline" style="font-size: 48px; margin-bottom: 10px; color: var(--status-idle);"></ion-icon>
+                    <div>All zones secure. No active triggers.</div>
+                </div>`;
+        }
     } else {
-        notifications.forEach(note => {
+        alertList.innerHTML = ""; // Clear empty state
+        activeAlerts.forEach((alertMsg, index) => {
             const div = document.createElement("div");
             div.className = "alert-card";
+            div.style.animationDelay = (index * 0.1) + 's';
+            
             div.innerHTML = `
-                <ion-icon name="warning" style="font-size: 24px; color: #f87171; min-width: 24px;"></ion-icon>
-                <div>
-                    <strong style="display:block; margin-bottom:4px; color: #fff;">Attention Required</strong>
-                    <span style="opacity: 0.9">${note}</span>
+                <div class="alert-icon-ring">
+                    <ion-icon name="warning" style="font-size: 24px; color: #ef4444;"></ion-icon>
+                </div>
+                <div class="alert-message">
+                    <strong>Critical Alert Triggered</strong>
+                    <span>${alertMsg}</span>
                 </div>
             `;
             alertList.appendChild(div);
@@ -75,17 +114,17 @@ function updateUI(data) {
     }
 }
 
-// Helper to animate numbers
+// Helper to animate numbers smoothly
 function animateValue(id, start, end) {
     if (start === end) return;
     const obj = document.getElementById(id);
     let current = start;
     const range = end - start;
     const increment = end > start ? 1 : -1;
-    const stepTime = Math.abs(Math.floor(500 / range));
+    // Faster animation for smaller range
+    const stepTime = Math.abs(Math.floor(200 / range));
     
-    // Safety for infinite loop if stepTime is 0
-    if (!stepTime) { 
+    if (!stepTime || !Number.isFinite(stepTime)) { 
         obj.innerText = end; 
         return; 
     }
@@ -96,9 +135,9 @@ function animateValue(id, start, end) {
         if (current === end) {
             clearInterval(timer);
         }
-    }, Math.max(stepTime, 50)); // Min 50ms to manage perf
+    }, Math.max(stepTime, 20)); 
 }
 
-// Poll every 5 seconds
-setInterval(fetchStatus, 5000);
-fetchStatus(); // Initial call
+// Decrease polling time to 2 seconds for a presentation-ready "real-time" feel
+setInterval(fetchStatus, 2000);
+fetchStatus(); // Initial load

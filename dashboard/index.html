@@ -15,8 +15,13 @@
         <!-- Header -->
         <header>
             <div class="brand">
-                <ion-icon name="analytics-outline" style="font-size: 24px; color: #818cf8;"></ion-icon>
-                <h1>Supermarket Monitor</h1>
+                <div class="brand-icon-wrapper">
+                    <ion-icon name="scan-outline" style="font-size: 24px; color: #818cf8;"></ion-icon>
+                </div>
+                <div>
+                    <h1>Employee Allocation System</h1>
+                    <span class="subtitle">Retail Monitoring System</span>
+                </div>
             </div>
             <div class="live-indicator">
                 <div class="pulse-dot"></div>
@@ -27,21 +32,22 @@
         <main>
             <!-- Sidebar Stats -->
             <aside class="sidebar">
-                <div class="stat-card">
+                <h2>Real-Time Capacity</h2>
+                <div class="stat-card stagger-1" id="card-idle">
                     <div class="stat-header">
                         <ion-icon name="person-outline"></ion-icon>
                         <span>Idle Staff</span>
                     </div>
                     <div class="stat-value" id="count-idle" style="color: var(--status-idle);">0</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card stagger-2" id="card-occupied">
                     <div class="stat-header">
                         <ion-icon name="people-outline"></ion-icon>
                         <span>Occupied</span>
                     </div>
                     <div class="stat-value" id="count-occupied" style="color: var(--status-occupied);">0</div>
                 </div>
-                <div class="stat-card">
+                <div class="stat-card stagger-3" id="card-out">
                     <div class="stat-header">
                         <ion-icon name="alert-circle-outline"></ion-icon>
                         <span>Out of Zone</span>
@@ -56,13 +62,16 @@
                 <!-- Active Alerts Section -->
                 <section>
                     <div class="section-header">
-                        <h2>Live Alerts</h2>
+                        <h2>
+                            <ion-icon name="warning-outline"></ion-icon>
+                            Active Triggers
+                        </h2>
                     </div>
                     <div id="alert-list" class="grid-container">
                         <!-- Javascript will populate this -->
                         <div class="empty-state">
-                            <ion-icon name="shield-checkmark-outline" style="font-size: 32px; margin-bottom: 10px;"></ion-icon>
-                            <div>All zones secure</div>
+                            <ion-icon name="shield-checkmark-outline" style="font-size: 48px; margin-bottom: 10px; color: var(--status-idle);"></ion-icon>
+                            <div>All zones secure. No active alerts.</div>
                         </div>
                     </div>
                 </section>
@@ -70,8 +79,11 @@
                 <!-- Employee Status Section -->
                 <section>
                     <div class="section-header">
-                        <h2>Employee Status</h2>
-                        <span style="font-size: 0.85rem; color: #94a3b8;">Real-time Matrix</span>
+                        <h2>
+                            <ion-icon name="grid-outline"></ion-icon>
+                            Employee Matrix
+                        </h2>
+                        <span style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Live Tracking</span>
                     </div>
                     <div id="employee-list" class="grid-container">
                         <!-- Javascript will populate this -->
