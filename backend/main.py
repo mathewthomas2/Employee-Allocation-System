@@ -34,11 +34,14 @@ class Customer(BaseModel):
 class SystemState(BaseModel):
     employees: List[Employee]
     customers: List[Customer]
-    pending_notifications: List[str] # List of messages
+    pending_notifications: List[str] = []
+    unattended_zones: dict = {} # Track unattended status per camera/zone
 
 class StatusUpdateRequest(BaseModel):
     employee_id: str
     status: str
+    unattended_customer: bool = False
+    location: Optional[str] = "Unknown"
 
 # --- Mock Data Store ---
 # IDs updated to match Video Text (EMP_01)
@@ -46,13 +49,14 @@ state = SystemState(
     employees=[
         Employee(id="EMP_01", password="1234", status="Occupied", last_seen="10:00:00"),
         Employee(id="EMP_02", password="password", status="Occupied", last_seen="10:00:05"),
-        Employee(id="EMP_03", password="admin", status="Idle", last_seen="09:55:00"),
+        Employee(id="EMP_03", password="admin", status="Occupied", last_seen="09:55:00"),
     ],
     customers=[
         Customer(id=101, status="Shopping", location="Aisle 1"),
         Customer(id=102, status="Needs Help", location="Checkout"),
     ],
-    pending_notifications=["Dairy Section needs assistance!"]
+    pending_notifications=[],
+    unattended_zones={}
 )
 
 # --- Routes ---
@@ -83,21 +87,28 @@ def get_status():
 def update_real_status(update: StatusUpdateRequest):
     """
     Receives real-time updates from Computer Vision Engine.
-    Expected Payload: {"employee_id": "EMP_01", "status": "Idle"}
+    Expected Payload: {"employee_id": "EMP_01", "status": "Idle", "unattended_customer": True}
     """
-    emp = next((e for e in state.employees if e.id == update.employee_id), None)
-    
-    if not emp:
-        # If ID not found, maybe add them dynamically? For now, just error or ignore.
-        raise HTTPException(status_code=404, detail="Employee ID not found in system")
-    
-    emp.status = update.status
-    # Update timestamp
-    import datetime
-    emp.last_seen = datetime.datetime.now().strftime("%H:%M:%S")
-    
-    print(f"[REAL-TIME] Updated {emp.id} to {emp.status}")
-    return {"message": "Status updated successfully", "new_state": emp}
+    # 1. Update Employee Status (if ID is known)
+    emp = None
+    if update.employee_id and update.employee_id != "UNKNOWN" and update.employee_id != "Scanning...":
+        emp = next((e for e in state.employees if e.id == update.employee_id), None)
+        if emp:
+            emp.status = update.status
+            import datetime
+            emp.last_seen = datetime.datetime.now().strftime("%H:%M:%S")
+            print(f"[REAL-TIME] Updated {emp.id} to {emp.status}")
+        else:
+            print(f"[WARNING] Employee ID {update.employee_id} not found in system.")
+
+    # 2. Update Unattended Customer Status per Zone (using employee_id as the zone identifier)
+    zone_id = update.employee_id
+    state.unattended_zones[zone_id] = {
+        "is_unattended": update.unattended_customer,
+        "location": update.location
+    }
+            
+    return {"message": "Status updated successfully"}
 
 @app.post("/update_mock")
 def update_mock_status():
@@ -118,15 +129,25 @@ def update_mock_status():
 def get_notifications(emp_id: str):
     """
     Mobile App Poll Endpoint.
-    Real logic would check if a specific alert is assigned to this ID.
+    Only sends an alert if the employee is Idle AND there is an Unattended Customer.
     """
-    # Simple logic: If EMP_01 is Idle and there are notifications, send one.
     target_emp = next((e for e in state.employees if e.id == emp_id), None)
     
     if not target_emp:
         raise HTTPException(status_code=404, detail="Employee not found")
 
-    if target_emp.status == "Idle" and state.pending_notifications:
-        return {"has_notification": True, "message": state.pending_notifications[0]}
+    # Check if ANY zone is currently reporting an unattended customer
+    unattended_zone_info = None
+    for zone, info in state.unattended_zones.items():
+        if isinstance(info, dict) and info.get("is_unattended"):
+            unattended_zone_info = info
+            break
+        elif isinstance(info, bool) and info is True: # Fallback for old data structure
+            unattended_zone_info = {"location": "Unknown"}
+            break
+
+    if target_emp.status == "Idle" and unattended_zone_info:
+        loc = unattended_zone_info.get("location", "Unknown")
+        return {"has_notification": True, "message": f"Unattended Customer at {loc}! Please assist."}
     
     return {"has_notification": False, "message": ""}
