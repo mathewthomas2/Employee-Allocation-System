@@ -35,6 +35,15 @@ function updateUI(data) {
     animateValue("count-occupied", parseInt(document.getElementById("count-occupied").innerText) || 0, occupied);
     animateValue("count-out", parseInt(document.getElementById("count-out").innerText) || 0, out);
 
+    // High Traffic Banner Logic
+    // If there is an active alert AND absolutely zero employees are Idle, show the Queue Warning.
+    const banner = document.getElementById("high-traffic-banner");
+    if (activeAlerts.length > 0 && idle === 0) {
+        banner.classList.add("active");
+    } else {
+        banner.classList.remove("active");
+    }
+
     // 2. Update Employee List
     const empList = document.getElementById("employee-list");
     empList.innerHTML = ""; 

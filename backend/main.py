@@ -47,8 +47,8 @@ class StatusUpdateRequest(BaseModel):
 # IDs updated to match Video Text (EMP_01)
 state = SystemState(
     employees=[
-        Employee(id="EMP_01", password="1234", status="Occupied", last_seen="10:00:00"),
-        Employee(id="EMP_02", password="password", status="Occupied", last_seen="10:00:05"),
+        Employee(id="EMP_01", password="1234", status="Idle", last_seen="10:00:00"),
+        Employee(id="EMP_02", password="password", status="Idle", last_seen="10:00:05"),
         Employee(id="EMP_03", password="admin", status="Occupied", last_seen="09:55:00"),
     ],
     customers=[
