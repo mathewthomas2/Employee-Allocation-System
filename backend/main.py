@@ -43,6 +43,10 @@ class StatusUpdateRequest(BaseModel):
     unattended_customer: bool = False
     location: Optional[str] = "Unknown"
 
+class ClaimRequest(BaseModel):
+    employee_id: str
+    zone_id: str
+
 # --- Mock Data Store ---
 # IDs updated to match Video Text (EMP_01)
 state = SystemState(
@@ -103,10 +107,25 @@ def update_real_status(update: StatusUpdateRequest):
 
     # 2. Update Unattended Customer Status per Zone (using employee_id as the zone identifier)
     zone_id = update.employee_id
-    state.unattended_zones[zone_id] = {
-        "is_unattended": update.unattended_customer,
-        "location": update.location
-    }
+    
+    # Check if this zone is ALREADY marked as unattended so we don't overwrite the claimed_by state continuously
+    current_zone = state.unattended_zones.get(zone_id)
+    is_currently_unattended = current_zone and current_zone.get("is_unattended")
+
+    if update.unattended_customer and not is_currently_unattended:
+        # A NEW unattended customer appeared. Reset the claim state.
+        state.unattended_zones[zone_id] = {
+            "is_unattended": True,
+            "location": update.location,
+            "claimed_by": None
+        }
+    elif not update.unattended_customer:
+        # The customer was attended to, or left. Clear the alert.
+        state.unattended_zones[zone_id] = {
+            "is_unattended": False,
+            "location": "Unknown",
+            "claimed_by": None
+        }
             
     return {"message": "Status updated successfully"}
 
@@ -125,11 +144,29 @@ def update_mock_status():
 
     return {"message": "Mock state updated", "current_state": state}
 
+@app.post("/claim_alert")
+def claim_alert(request: ClaimRequest):
+    """Allows an Idle employee to claim an unattended customer alert."""
+    empid = request.employee_id
+    zid = request.zone_id
+
+    if zid not in state.unattended_zones or not state.unattended_zones[zid].get("is_unattended"):
+        return {"success": False, "message": "Alert no longer exists or has already been resolved."}
+    
+    if state.unattended_zones[zid].get("claimed_by") is not None:
+         return {"success": False, "message": "Alert was already claimed by someone else."}
+
+    # Claim it!
+    state.unattended_zones[zid]["claimed_by"] = empid
+    print(f"[CLAIM] {empid} has claimed the alert for zone {zid}")
+    return {"success": True, "message": "Alert successfully claimed."}
+
+
 @app.get("/notifications/{emp_id}")
 def get_notifications(emp_id: str):
     """
     Mobile App Poll Endpoint.
-    Only sends an alert if the employee is Idle AND there is an Unattended Customer.
+    Only sends an alert if the employee is Idle AND there is an Unattended Customer that has NOT been claimed.
     """
     target_emp = next((e for e in state.employees if e.id == emp_id), None)
     
@@ -138,16 +175,26 @@ def get_notifications(emp_id: str):
 
     # Check if ANY zone is currently reporting an unattended customer
     unattended_zone_info = None
+    target_zone_id = None
+    
     for zone, info in state.unattended_zones.items():
         if isinstance(info, dict) and info.get("is_unattended"):
-            unattended_zone_info = info
-            break
-        elif isinstance(info, bool) and info is True: # Fallback for old data structure
-            unattended_zone_info = {"location": "Unknown"}
-            break
+            claimed_by = info.get("claimed_by")
+            # We show the alert IF it is unclaimed, OR if this exact employee claimed it
+            if claimed_by is None or claimed_by == emp_id:
+                unattended_zone_info = info
+                target_zone_id = zone
+                break
 
     if target_emp.status == "Idle" and unattended_zone_info:
         loc = unattended_zone_info.get("location", "Unknown")
-        return {"has_notification": True, "message": f"Unattended Customer at {loc}! Please assist."}
+        is_claimed = unattended_zone_info.get("claimed_by") == emp_id
+        
+        return {
+            "has_notification": True, 
+            "message": f"Unattended Customer at {loc}! Please assist.",
+            "is_claimed": is_claimed,
+            "zone_id": target_zone_id
+        }
     
-    return {"has_notification": False, "message": ""}
+    return {"has_notification": False, "message": "", "is_claimed": False, "zone_id": None}

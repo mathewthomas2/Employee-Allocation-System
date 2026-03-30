@@ -17,6 +17,8 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String status = "Monitoring Zone...";
   String? activeAlert;
+  String? activeZoneId;
+  bool isClaimed = false;
   Timer? _timer;
 
   // Use the connection string from config.dart
@@ -58,7 +60,9 @@ class _HomePageState extends State<HomePage> {
 
            setState(() {
              activeAlert = data['message'];
-             status = "Action Required!";
+             activeZoneId = data['zone_id'];
+             isClaimed = data['is_claimed'] ?? false;
+             status = isClaimed ? "Heading to Zone!" : "Action Required!";
            });
            // _showAlertDialog(data['message']); // relying on UI button below
         } else {
@@ -93,6 +97,40 @@ class _HomePageState extends State<HomePage> {
         }),
       ),
     );
+  }
+
+  Future<void> _claimAlert() async {
+    if (activeZoneId == null) return;
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/claim_alert'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'employee_id': widget.empId,
+          'zone_id': activeZoneId
+        }),
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true) {
+           Vibration.cancel();
+           setState(() {
+             isClaimed = true;
+             status = "Heading to Zone!";
+           });
+           ScaffoldMessenger.of(context).showSnackBar(
+             const SnackBar(content: Text("Alert Claimed! Proceed to Zone.")),
+           );
+        } else {
+           ScaffoldMessenger.of(context).showSnackBar(
+             SnackBar(content: Text(data['message'])),
+           );
+        }
+      }
+    } catch (e) {
+      print("Failed to claim: $e");
+    }
   }
 
   @override
@@ -155,22 +193,37 @@ class _HomePageState extends State<HomePage> {
                  ),
                ),
                const SizedBox(height: 30),
-               ElevatedButton.icon(
-                 onPressed: () {
-                   Vibration.cancel(); // Stop buzzing manually
-                   setState(() {
-                     activeAlert = null;
-                     status = "Monitoring Zone...";
-                   });
-                 },
-                 icon: const Icon(Icons.check),
-                 label: const Text("Mark as Resolved"),
-                 style: ElevatedButton.styleFrom(
-                   backgroundColor: Colors.green,
-                   foregroundColor: Colors.white,
+               // Alert Action Buttons
+               if (!isClaimed) 
+                 ElevatedButton.icon(
+                   onPressed: () {
+                     Vibration.cancel();
+                     _claimAlert(); 
+                   },
+                   icon: const Icon(Icons.front_hand),
+                   label: const Text("I'm On It! (Claim)"),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: Colors.blueAccent,
+                     foregroundColor: Colors.white,
+                     padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+                   ),
+                 )
+               else
+                 Container(
                    padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-                 ),
-               )
+                   decoration: BoxDecoration(
+                     color: Colors.green,
+                     borderRadius: BorderRadius.circular(30)
+                   ),
+                   child: Row(
+                     mainAxisSize: MainAxisSize.min,
+                     children: const [
+                       Icon(Icons.directions_run, color: Colors.white),
+                       SizedBox(width: 10),
+                       Text("Claimed - Proceeding...", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                     ]
+                   )
+                 )
             ]
           ],
         ),
