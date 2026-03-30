@@ -29,11 +29,9 @@ function updateUI(data) {
     // 1. Update Stats
     const idle = employees.filter(e => e.status === "Idle").length;
     const occupied = employees.filter(e => e.status === "Occupied").length;
-    const out = employees.filter(e => e.status === "Out of Zone").length;
 
     animateValue("count-idle", parseInt(document.getElementById("count-idle").innerText) || 0, idle);
     animateValue("count-occupied", parseInt(document.getElementById("count-occupied").innerText) || 0, occupied);
-    animateValue("count-out", parseInt(document.getElementById("count-out").innerText) || 0, out);
 
     // High Traffic Banner Logic
     // If there is an active alert AND absolutely zero employees are Idle, show the Queue Warning.
@@ -70,12 +68,25 @@ function updateUI(data) {
         // Data attribute for the CSS glow effect
         div.setAttribute('data-status', statusClass);
         
+        let penaltyHTML = "";
+        if (emp.missed_claims >= 2) {
+            div.classList.add("penalized-card");
+            penaltyHTML = `
+                <div class="penalty-badge" title="${emp.missed_claims} Missed Claims">
+                    <ion-icon name="warning"></ion-icon> 🚩 ${emp.missed_claims} Alerts skipped
+                </div>
+            `;
+        }
+        
         div.innerHTML = `
             <div class="avatar">
                 <ion-icon name="${iconName}"></ion-icon>
             </div>
             <div class="card-info">
-                <h3>${emp.id}</h3>
+                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                    <h3>${emp.id}</h3>
+                    ${penaltyHTML}
+                </div>
                 <span class="status-badge badge-${statusClass}">
                     <div class="status-indicator"></div>
                     ${emp.status}

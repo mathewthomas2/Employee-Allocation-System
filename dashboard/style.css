@@ -435,6 +435,28 @@ main {
     gap: 4px;
 }
 
+/* --- Penalty Badge (Black Marks) --- */
+.penalized-card {
+    border-color: rgba(239, 68, 68, 0.4) !important;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(255, 255, 255, 0.02)) !important;
+}
+
+.penalty-badge {
+    background: rgba(239, 68, 68, 0.15);
+    color: #fca5a5;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    animation: neonPulse 2s infinite;
+}
+
 /* --- Alerts --- */
 .alert-card {
     background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(220, 38, 38, 0.05));

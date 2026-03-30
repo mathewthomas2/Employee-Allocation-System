@@ -27,6 +27,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void initState() {
     super.initState();
+    _checkNotifications(); // Fetch immediately on App Load
     _startPolling();
   }
 
@@ -38,7 +39,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _startPolling() {
-    _timer = Timer.periodic(const Duration(seconds: 10), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
       _checkNotifications();
     });
   }
@@ -51,9 +52,10 @@ class _HomePageState extends State<HomePage> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         if (data['has_notification'] == true) {
+           bool newIsClaimed = data['is_claimed'] ?? false;
            
-           // Triger Sound & Vibration (Only if not already vibrating)
-           if (activeAlert == null) {
+           // Trigger Sound & Vibration (If it's a NEW alert, OR if a claimed alert was just Revoked)
+           if (activeAlert == null || (isClaimed && !newIsClaimed)) {
               // Pattern: [Wait 500ms, Buzz 500ms] repeated
               Vibration.vibrate(pattern: [500, 500], repeat: 0); 
            }
@@ -61,7 +63,7 @@ class _HomePageState extends State<HomePage> {
            setState(() {
              activeAlert = data['message'];
              activeZoneId = data['zone_id'];
-             isClaimed = data['is_claimed'] ?? false;
+             isClaimed = newIsClaimed;
              status = isClaimed ? "Heading to Zone!" : "Action Required!";
            });
            // _showAlertDialog(data['message']); // relying on UI button below

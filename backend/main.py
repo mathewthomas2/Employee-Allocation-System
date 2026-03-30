@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import random
+import time
 
 app = FastAPI()
 
@@ -21,6 +22,7 @@ class Employee(BaseModel):
     password: str # [NEW] Password field
     status: str  # "Idle", "Occupied", "Out of Zone"
     last_seen: str # timestamp string
+    missed_claims: int = 0 # Track how many times they claimed but timed out
 
 class LoginRequest(BaseModel):
     id: str
@@ -105,8 +107,8 @@ def update_real_status(update: StatusUpdateRequest):
         else:
             print(f"[WARNING] Employee ID {update.employee_id} not found in system.")
 
-    # 2. Update Unattended Customer Status per Zone (using employee_id as the zone identifier)
-    zone_id = update.employee_id
+    # 2. Update Unattended Customer Status per Zone (using Location as the identifier)
+    zone_id = update.location
     
     # Check if this zone is ALREADY marked as unattended so we don't overwrite the claimed_by state continuously
     current_zone = state.unattended_zones.get(zone_id)
@@ -117,14 +119,16 @@ def update_real_status(update: StatusUpdateRequest):
         state.unattended_zones[zone_id] = {
             "is_unattended": True,
             "location": update.location,
-            "claimed_by": None
+            "claimed_by": None,
+            "claim_time": None
         }
     elif not update.unattended_customer:
         # The customer was attended to, or left. Clear the alert.
         state.unattended_zones[zone_id] = {
             "is_unattended": False,
             "location": "Unknown",
-            "claimed_by": None
+            "claimed_by": None,
+            "claim_time": None
         }
             
     return {"message": "Status updated successfully"}
@@ -158,6 +162,7 @@ def claim_alert(request: ClaimRequest):
 
     # Claim it!
     state.unattended_zones[zid]["claimed_by"] = empid
+    state.unattended_zones[zid]["claim_time"] = time.time()
     print(f"[CLAIM] {empid} has claimed the alert for zone {zid}")
     return {"success": True, "message": "Alert successfully claimed."}
 
@@ -172,6 +177,24 @@ def get_notifications(emp_id: str):
     
     if not target_emp:
         raise HTTPException(status_code=404, detail="Employee not found")
+
+    # Check for Timeouts FIRST
+    current_time = time.time()
+    for zone, info in state.unattended_zones.items():
+        if isinstance(info, dict) and info.get("is_unattended") and info.get("claimed_by"):
+            claim_time = info.get("claim_time")
+            # If it has been more than 10 seconds since claim, revoke it!
+            if claim_time and (current_time - claim_time) > 10:
+                guilty_emp_id = info['claimed_by']
+                print(f"[TIMEOUT] Alert in {zone} claimed by {guilty_emp_id} has timed out. Re-queueing!")
+                
+                # Assign a Black Mark (Missed Claim) to the negligent employee
+                guilty_emp = next((e for e in state.employees if e.id == guilty_emp_id), None)
+                if guilty_emp:
+                    guilty_emp.missed_claims += 1
+
+                info["claimed_by"] = None
+                info["claim_time"] = None
 
     # Check if ANY zone is currently reporting an unattended customer
     unattended_zone_info = None
