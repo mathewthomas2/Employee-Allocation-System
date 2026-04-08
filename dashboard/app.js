@@ -29,9 +29,11 @@ function updateUI(data) {
     // 1. Update Stats
     const idle = employees.filter(e => e.status === "Idle").length;
     const occupied = employees.filter(e => e.status === "Occupied").length;
+    const out = employees.filter(e => e.status === "Out of Zone").length;
 
     animateValue("count-idle", parseInt(document.getElementById("count-idle").innerText) || 0, idle);
     animateValue("count-occupied", parseInt(document.getElementById("count-occupied").innerText) || 0, occupied);
+    animateValue("count-out", parseInt(document.getElementById("count-out").innerText) || 0, out);
 
     // High Traffic Banner Logic
     // If there is an active alert AND absolutely zero employees are Idle, show the Queue Warning.

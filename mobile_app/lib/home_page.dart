@@ -68,8 +68,11 @@ class _HomePageState extends State<HomePage> {
            });
            // _showAlertDialog(data['message']); // relying on UI button below
         } else {
-           if (activeAlert == null) {
+           if (activeAlert != null) {
              setState(() {
+               activeAlert = null;
+               activeZoneId = null;
+               isClaimed = false;
                status = "Monitoring Zone...";
              });
            }
