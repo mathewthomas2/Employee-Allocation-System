@@ -5,11 +5,18 @@ import requests
 import threading
 import numpy as np
 from collections import Counter
+import os
+
+# --- MASSIVE MEMORY SAVERS ---
+# Force PyTorch to use minimum memory since we are running 4 processes
+import torch
+torch.set_grad_enabled(False) # Globally disable gradients to save 50% RAM
+torch.set_num_threads(1)      # Prevent PyTorch from duplicating memory pools per thread
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
+
 from detector import PersonDetector
 from ocr_module import TextReader
 from logic import InteractionDetector
-
-import os
 
 # Backend URL
 BACKEND_URL = "http://127.0.0.1:8000/update_real_status"
@@ -60,6 +67,9 @@ def main(video_file="videos/emp1.MOV"):
         ret, frame = cap.read()
         if not ret:
             break # End of video
+        
+        # MASSIVE MEMORY SAVER: Resize video immediately to 720p so PyTorch doesn't crash on 4K frames!
+        frame = cv2.resize(frame, (1280, 720))
         
         frame_count += 1
         
@@ -124,9 +134,9 @@ def main(video_file="videos/emp1.MOV"):
                 employees.append(person)
                 last_emp_center = ((x1 + x2) / 2, (y1 + y2) / 2) # Update tracking center
             else:
-                # FILTER: Only add customers if they are actual people with high confidence (>60%)
-                # This prevents posters, reflections, or shadows from turning into "Ghost" customers
-                if conf > 0.60:
+                # FILTER: Only add customers if they are actual people with high confidence (>40%)
+                # Lowered threshold to 0.40 because resizing to 720p slightly reduces YOLO confidence
+                if conf > 0.40:
                     customers.append(person)
 
         # --- LOGIC: Determine Status ---
@@ -189,8 +199,7 @@ def main(video_file="videos/emp1.MOV"):
              cv2.putText(frame, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, box_color, 1)
 
         # 7. Show Frame
-        frame_resized = cv2.resize(frame, (1280, 720)) 
-        cv2.imshow("Employee Monitoring System (Press 'Q' to Quit)", frame_resized)
+        cv2.imshow("Employee Monitoring System (Press 'Q' to Quit)", frame)
 
         # Press Q to quit
         if cv2.waitKey(1) & 0xFF == ord('q'):

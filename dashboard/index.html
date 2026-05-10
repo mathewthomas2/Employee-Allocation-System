@@ -6,7 +6,6 @@
     <title>Employee Monitoring Dashboard</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Ionicons for modern icons -->
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
     <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </head>
@@ -29,7 +28,7 @@
         </header>
 
         <main>
-            <!-- Sidebar Stats -->
+            <!-- Sidebar -->
             <aside class="sidebar">
                 <h2>Real-Time Capacity</h2>
                 <div class="stat-card stagger-1" id="card-idle">
@@ -58,7 +57,7 @@
             <!-- Main Content -->
             <div class="content-area">
                 
-                <!-- High Traffic / Queued Alert Banner -->
+                <!-- Alert Banner -->
                 <div id="high-traffic-banner" class="high-traffic-banner">
                     <div class="alert-icon-ring" style="background: rgba(245, 158, 11, 0.2);">
                         <ion-icon name="warning" style="font-size: 24px; color: #f59e0b;"></ion-icon>
@@ -78,7 +77,6 @@
                         </h2>
                     </div>
                     <div id="alert-list" class="grid-container">
-                        <!-- Javascript will populate this -->
                         <div class="empty-state">
                             <ion-icon name="shield-checkmark-outline" style="font-size: 48px; margin-bottom: 10px; color: var(--status-idle);"></ion-icon>
                             <div>All zones secure. No active alerts.</div>
@@ -96,7 +94,6 @@
                         <span style="font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase;">Live Tracking</span>
                     </div>
                     <div id="employee-list" class="grid-container">
-                        <!-- Javascript will populate this -->
                     </div>
                 </section>
 
